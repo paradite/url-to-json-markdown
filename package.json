@@ -1,0 +1,10 @@
+{
+  "name": "url-to-json-markdown",
+  "version": "1.0.0",
+  "description": "Fetch URL and convert to structured JSON and Markdown.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "paradite"
+}
