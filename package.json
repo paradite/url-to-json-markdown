@@ -2,9 +2,50 @@
   "name": "url-to-json-markdown",
   "version": "1.0.0",
   "description": "Fetch URL and convert to structured JSON and Markdown.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "dist/index.js",
+  "type": "module",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
   },
-  "author": "paradite"
+  "scripts": {
+    "build": "tsup src/index.ts --dts --format esm,cjs",
+    "compile": "tsup src/index.ts --dts --format esm,cjs",
+    "prepublishOnly": "rm -rf ./dist && npm run compile",
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
+    "test:ci": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest --silent"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/paradite/url-to-json-markdown.git"
+  },
+  "keywords": [
+    "url",
+    "json",
+    "markdown",
+    "fetch",
+    "convert"
+  ],
+  "author": "paradite",
+  "license": "MIT",
+  "homepage": "https://github.com/paradite/url-to-json-markdown#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "ts-jest": "^29.3.2",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3"
+  }
 }
