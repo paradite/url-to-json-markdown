@@ -43,6 +43,19 @@ async function parseRedditUrl(url: string): Promise<UrlToJsonResult> {
     const data = await response.json() as any;
     const post = data[0].data.children[0].data;
     
+    // Check if this is a comment URL
+    const commentId = extractCommentId(url);
+    if (commentId && data.length > 1) {
+      const comment = findCommentById(data[1], commentId);
+      if (comment) {
+        return {
+          title: post.title,
+          content: formatCommentToMarkdown(comment),
+          type: 'reddit'
+        };
+      }
+    }
+    
     return {
       title: post.title,
       content: formatPostToMarkdown(post),
@@ -139,6 +152,56 @@ function isRedditUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+function extractCommentId(url: string): string | null {
+  const match = url.match(/\/comment\/([a-zA-Z0-9]+)\/?/);
+  return match ? match[1] : null;
+}
+
+function findCommentById(commentsListing: any, commentId: string): any {
+  if (!commentsListing?.data?.children) {
+    return null;
+  }
+  
+  for (const child of commentsListing.data.children) {
+    if (child.kind === 't1' && child.data.id === commentId) {
+      return child.data;
+    }
+    
+    // Recursively search in replies
+    if (child.data.replies && typeof child.data.replies === 'object') {
+      const found = findCommentById(child.data.replies, commentId);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  
+  return null;
+}
+
+function formatCommentToMarkdown(comment: any): string {
+  let markdown = `# Comment by ${comment.author}\n\n`;
+  
+  if (comment.body) {
+    markdown += `${comment.body}\n\n`;
+  }
+  
+  markdown += `[permalink](https://reddit.com${comment.permalink})\n\n`;
+  
+  const createdDate = new Date(comment.created_utc * 1000).toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  
+  markdown += `by *${comment.author}* (↑ ${comment.ups}/ ↓ ${comment.downs}) ${createdDate}`;
+  
+  return markdown;
 }
 
 function formatPostToMarkdown(post: any): string {
