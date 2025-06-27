@@ -48,8 +48,9 @@ async function parseRedditUrl(url: string): Promise<UrlToJsonResult> {
     if (commentId && data.length > 1) {
       const comment = findCommentById(data[1], commentId);
       if (comment) {
+        const commentTitle = extractCommentTitle(comment.body);
         return {
-          title: post.title,
+          title: commentTitle,
           content: formatCommentToMarkdown(comment),
           type: 'reddit'
         };
@@ -159,6 +160,35 @@ function extractCommentId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+function normalizeQuotes(text: string): string {
+  return text
+    .replace(/[\u2018\u2019]/g, "'") // Replace left and right single quotes
+    .replace(/[\u201C\u201D]/g, '"') // Replace left and right double quotes
+    .replace(/[\u2013\u2014]/g, '-') // Replace en-dash and em-dash with regular dash
+    .replace(/\u2026/g, '...'); // Replace ellipsis character with three dots
+}
+
+function extractCommentTitle(commentBody: string): string {
+  if (!commentBody) {
+    return 'Untitled Comment';
+  }
+  
+  // Get the first line of the comment body and normalize quotes
+  const firstLine = normalizeQuotes(commentBody.split('\n')[0].trim());
+  
+  // If the first line is empty or too short, return a default title
+  if (!firstLine || firstLine.length < 3) {
+    return 'Untitled Comment';
+  }
+  
+  // Limit title length to 100 characters
+  if (firstLine.length > 100) {
+    return firstLine.substring(0, 97) + '...';
+  }
+  
+  return firstLine;
+}
+
 function findCommentById(commentsListing: any, commentId: string): any {
   if (!commentsListing?.data?.children) {
     return null;
@@ -185,7 +215,7 @@ function formatCommentToMarkdown(comment: any): string {
   let markdown = `# Comment by ${comment.author}\n\n`;
   
   if (comment.body) {
-    markdown += `${comment.body}\n\n`;
+    markdown += `${normalizeQuotes(comment.body)}\n\n`;
   }
   
   markdown += `[permalink](https://reddit.com${comment.permalink})\n\n`;
@@ -205,10 +235,10 @@ function formatCommentToMarkdown(comment: any): string {
 }
 
 function formatPostToMarkdown(post: any): string {
-  let markdown = `# ${post.title}\n\n`;
+  let markdown = `# ${normalizeQuotes(post.title)}\n\n`;
   
   if (post.selftext) {
-    markdown += `${post.selftext}\n\n`;
+    markdown += `${normalizeQuotes(post.selftext)}\n\n`;
   }
   
   markdown += `[permalink](https://reddit.com${post.permalink})\n\n`;

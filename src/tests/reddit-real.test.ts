@@ -20,7 +20,7 @@ describe("Reddit Real URL", () => {
     );
 
     expect(result.type).toBe("reddit");
-    expect(result.title).toBe("What is your favorite eval tech stack for an LLM system");
+    expect(result.title).toBe("I've tried a handful of evaluation tools, and here's what I've learned from using them:");
     expect(result.content).toContain("handful of evaluation tools");
     expect(result.content).toContain("Comment by UnitApprehensive5150");
     expect(result.content).toContain("by *UnitApprehensive5150*");
