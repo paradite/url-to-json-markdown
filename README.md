@@ -1,5 +1,7 @@
 # url-to-json-markdown
 
+[![NPM version](https://img.shields.io/npm/v/url-to-json-markdown)](https://www.npmjs.com/package/url-to-json-markdown)
+
 A TypeScript library that fetches URLs and converts them to structured JSON and Markdown format.
 
 Built by [16x Writer](https://writer.16x.engineer/) and [16x Eval](https://eval.16x.engineer/) team.
