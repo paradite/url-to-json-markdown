@@ -5,6 +5,12 @@ import * as path from "path";
 // Mock fetch globally
 global.fetch = jest.fn();
 
+// Dummy credentials for mocked tests
+const dummyCredentials = {
+  clientId: "test_client_id",
+  clientSecret: "test_client_secret"
+};
+
 // Load Reddit JSON fixture
 const redditSampleData = JSON.parse(
   fs.readFileSync(path.join(__dirname, "fixtures", "reddit-sample.json"), "utf-8")
@@ -24,7 +30,8 @@ describe("Reddit Sample Fixture", () => {
     });
 
     const result = await urlToJsonMarkdown(
-      "https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/"
+      "https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/",
+      dummyCredentials
     );
 
     expect(result.type).toBe("reddit");
@@ -44,7 +51,8 @@ describe("Reddit Sample Fixture", () => {
     });
 
     const result = await urlToJsonMarkdown(
-      "https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/comment/mye3h38/"
+      "https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/comment/mye3h38/",
+      dummyCredentials
     );
 
     expect(result.type).toBe("reddit");

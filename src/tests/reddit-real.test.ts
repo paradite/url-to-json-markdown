@@ -1,9 +1,15 @@
 import { urlToJsonMarkdown } from "../index.js";
 
+const redditCredentials = {
+  clientId: process.env.REDDIT_CLIENT_ID!,
+  clientSecret: process.env.REDDIT_CLIENT_SECRET!
+};
+
 describe("Reddit Real URL", () => {
   test("should work with Reddit post", async () => {
     const result = await urlToJsonMarkdown(
-      "https://www.reddit.com/r/ClaudeAI/comments/1le69jw/midproject_on_cursor_easy_to_context_switch_to/"
+      "https://www.reddit.com/r/ClaudeAI/comments/1le69jw/midproject_on_cursor_easy_to_context_switch_to/",
+      redditCredentials
     );
 
     expect(result.type).toBe("reddit");
@@ -16,7 +22,8 @@ describe("Reddit Real URL", () => {
 
   test("should work with Reddit comment URL", async () => {
     const result = await urlToJsonMarkdown(
-      "https://www.reddit.com/r/LLMDevs/comments/1l6usee/comment/mwsl58w/"
+      "https://www.reddit.com/r/LLMDevs/comments/1l6usee/comment/mwsl58w/",
+      redditCredentials
     );
 
     expect(result.type).toBe("reddit");
@@ -30,7 +37,8 @@ describe("Reddit Real URL", () => {
 
   test("should work with LLMDevs Reddit main post", async () => {
     const result = await urlToJsonMarkdown(
-      "https://www.reddit.com/r/LLMDevs/comments/1l6usee/what_is_your_favorite_eval_tech_stack_for_an_llm/"
+      "https://www.reddit.com/r/LLMDevs/comments/1l6usee/what_is_your_favorite_eval_tech_stack_for_an_llm/",
+      redditCredentials
     );
 
     expect(result.type).toBe("reddit");

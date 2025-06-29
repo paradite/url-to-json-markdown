@@ -1,5 +1,9 @@
 // jest.config.ts
 import type { JestConfigWithTsJest } from "ts-jest";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
 
 // https://kulshekhar.github.io/ts-jest/docs/guides/esm-support
 

@@ -7,37 +7,60 @@ export interface UrlToJsonResult {
   type: 'reddit' | 'generic';
 }
 
-export async function urlToJsonMarkdown(url: string): Promise<UrlToJsonResult> {
+export interface RedditCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+
+export async function urlToJsonMarkdown(url: string, redditCredentials?: RedditCredentials): Promise<UrlToJsonResult> {
   if (isRedditUrl(url)) {
-    return await parseRedditUrl(url);
+    if (!redditCredentials) {
+      throw new Error('Reddit credentials are required for Reddit URLs. Please provide clientId and clientSecret.');
+    }
+    return await parseRedditUrl(url, redditCredentials);
   } else {
     return await parseGenericUrl(url);
   }
 
 }
 
-async function parseRedditUrl(url: string): Promise<UrlToJsonResult> {
-  const jsonUrl = `${url}.json`;
+async function getRedditToken(credentials: RedditCredentials): Promise<string> {
+  const auth = Buffer.from(`${credentials.clientId}:${credentials.clientSecret}`).toString('base64');
   
+  const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to get Reddit token: ${response.status} ${response.statusText}`);
+  }
+  
+  const data = await response.json() as any;
+  return data.access_token;
+}
+
+async function parseRedditUrl(url: string, credentials: RedditCredentials): Promise<UrlToJsonResult> {
   try {
-    const response = await fetch(jsonUrl, {
+    // Get OAuth token
+    const token = await getRedditToken(credentials);
+    
+    // Convert reddit.com URL to oauth.reddit.com API URL
+    const oauthUrl = convertToOAuthUrl(url);
+    
+    const response = await fetch(oauthUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        Authorization: `Bearer ${token}`,
+        'User-Agent': 'web:url-to-json-markdown:v1.0.0 (by /u/paradite)',
       }
     });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch Reddit data: ${response.status} ${response.statusText}`);
-    }
-    
-    const contentType = response.headers.get('content-type');
-    if (!contentType?.includes('application/json')) {
-      throw new Error('Reddit returned HTML instead of JSON. This may be due to rate limiting or CORS restrictions. Consider using a server-side implementation or Reddit API with authentication.');
     }
     
     const data = await response.json() as any;
@@ -144,6 +167,17 @@ async function parseGenericUrl(url: string): Promise<UrlToJsonResult> {
     }
     throw new Error(`Failed to parse generic URL: ${error}`);
   }
+}
+
+function convertToOAuthUrl(url: string): string {
+  // Convert www.reddit.com/r/subreddit/comments/id/title.json to oauth.reddit.com/r/subreddit/comments/id/title.json
+  const urlObj = new URL(url);
+  const path = urlObj.pathname;
+  
+  // Add .json if not present
+  const jsonPath = path.endsWith('.json') ? path : `${path}.json`;
+  
+  return `https://oauth.reddit.com${jsonPath}`;
 }
 
 function isRedditUrl(url: string): boolean {
