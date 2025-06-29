@@ -34,6 +34,17 @@ const postWithCreds = await urlToJsonMarkdown(
   }
 );
 
+// Reddit post with comments included
+const postWithComments = await urlToJsonMarkdown(
+  'https://www.reddit.com/r/example/comments/12345/title/',
+  {
+    clientId: 'your_client_id',
+    clientSecret: 'your_client_secret',
+    includeComments: true,
+  }
+);
+// Will include "## Comments" section with tree-structured comments
+
 // Reddit comment
 const comment = await urlToJsonMarkdown(
   'https://www.reddit.com/r/example/comments/12345/comment/abc123/'
@@ -51,21 +62,25 @@ console.log(webpage.type); // "generic"
 
 ## API
 
-### `urlToJsonMarkdown(url: string, redditCredentials?: RedditCredentials): Promise<UrlToJsonResult>`
+### `urlToJsonMarkdown(url: string, options?: RedditOptions): Promise<UrlToJsonResult>`
 
 **Parameters:**
 
 - `url` - The URL to fetch and convert
-- `redditCredentials` - Optional Reddit API credentials for more reliable access
+- `options` - Optional Reddit configuration
 
-**Reddit Credentials:**
+**Reddit Options:**
 
 ```typescript
-interface RedditCredentials {
-  clientId: string;
-  clientSecret: string;
+interface RedditOptions {
+  clientId?: string;
+  clientSecret?: string;
+  includeComments?: boolean;
 }
 ```
+
+- `clientId` & `clientSecret` - Reddit API credentials for more reliable access
+- `includeComments` - Include comments in a tree structure (Reddit posts only)
 
 **Return Type:**
 

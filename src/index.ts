@@ -7,23 +7,27 @@ export interface UrlToJsonResult {
   type: 'reddit' | 'generic';
 }
 
-export interface RedditCredentials {
-  clientId: string;
-  clientSecret: string;
+export interface RedditOptions {
+  clientId?: string;
+  clientSecret?: string;
+  includeComments?: boolean;
 }
 
 export async function urlToJsonMarkdown(
   url: string,
-  redditCredentials?: RedditCredentials
+  options?: RedditOptions
 ): Promise<UrlToJsonResult> {
   if (isRedditUrl(url)) {
-    return await parseRedditUrl(url, redditCredentials);
+    return await parseRedditUrl(url, options);
   } else {
     return await parseGenericUrl(url);
   }
 }
 
-async function getRedditToken(credentials: RedditCredentials): Promise<string> {
+async function getRedditToken(credentials: {
+  clientId: string;
+  clientSecret: string;
+}): Promise<string> {
   const auth = Buffer.from(
     `${credentials.clientId}:${credentials.clientSecret}`
   ).toString('base64');
@@ -49,15 +53,18 @@ async function getRedditToken(credentials: RedditCredentials): Promise<string> {
 
 async function parseRedditUrl(
   url: string,
-  credentials?: RedditCredentials
+  options?: RedditOptions
 ): Promise<UrlToJsonResult> {
   try {
     let apiUrl: string;
     let headers: Record<string, string>;
 
-    if (credentials) {
+    if (options?.clientId && options?.clientSecret) {
       // Use OAuth API with credentials
-      const token = await getRedditToken(credentials);
+      const token = await getRedditToken({
+        clientId: options.clientId,
+        clientSecret: options.clientSecret,
+      });
       apiUrl = convertToOAuthUrl(url);
       headers = {
         Authorization: `Bearer ${token}`,
@@ -86,7 +93,7 @@ async function parseRedditUrl(
     }
 
     // Check content type for public API fallback
-    if (!credentials) {
+    if (!options?.clientId || !options?.clientSecret) {
       const contentType = response.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         throw new Error(
@@ -112,9 +119,12 @@ async function parseRedditUrl(
       }
     }
 
+    // Get comments data if available
+    const comments = data.length > 1 ? data[1].data.children : null;
+
     return {
       title: post.title,
-      content: formatPostToMarkdown(post),
+      content: formatPostToMarkdown(post, comments, options),
       type: 'reddit',
     };
   } catch (error) {
@@ -334,7 +344,54 @@ function formatCommentToMarkdown(comment: any, postTitle?: string): string {
   return markdown;
 }
 
-function formatPostToMarkdown(post: any): string {
+function formatCommentTree(comment: any): string {
+  if (!comment.data) {
+    return '';
+  }
+
+  let output = '';
+  const depth = comment.data.depth || 0;
+
+  // Create depth indicator using tree style
+  let depthIndicator = '';
+  if (depth > 0) {
+    depthIndicator = `├${'─'.repeat(depth)} `;
+  } else {
+    depthIndicator = '##### ';
+  }
+
+  // Format comment body
+  if (comment.data.body) {
+    const commentBody = normalizeQuotes(comment.data.body);
+    output += `${depthIndicator}${commentBody} ⏤ by *${comment.data.author}* (↑ ${comment.data.ups}/ ↓ ${comment.data.downs})\n`;
+  } else {
+    output += `${depthIndicator}deleted\n`;
+  }
+
+  // Process replies recursively
+  if (
+    comment.data.replies &&
+    typeof comment.data.replies === 'object' &&
+    comment.data.replies.data?.children
+  ) {
+    comment.data.replies.data.children.forEach((reply: any) => {
+      output += formatCommentTree(reply);
+    });
+  }
+
+  // Add separator after top-level comments
+  if (depth === 0 && comment.data.replies) {
+    output += '└────\n\n';
+  }
+
+  return output;
+}
+
+function formatPostToMarkdown(
+  post: any,
+  comments?: any[],
+  options?: RedditOptions
+): string {
   let markdown = `# ${normalizeQuotes(post.title)}\n\n`;
 
   if (post.selftext) {
@@ -356,6 +413,14 @@ function formatPostToMarkdown(post: any): string {
   );
 
   markdown += `by *${post.author}* (↑ ${post.ups}/ ↓ ${post.downs}) ${createdDate}`;
+
+  // Add comments if requested and available
+  if (options?.includeComments && comments && comments.length > 0) {
+    markdown += '\n\n## Comments\n\n';
+    comments.forEach((comment) => {
+      markdown += formatCommentTree(comment);
+    });
+  }
 
   return markdown;
 }

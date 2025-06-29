@@ -5,8 +5,8 @@ import * as path from 'path';
 // Mock fetch globally
 global.fetch = jest.fn();
 
-// Dummy credentials for mocked tests
-const dummyCredentials = {
+// Dummy options for mocked tests
+const dummyOptions = {
   clientId: 'test_client_id',
   clientSecret: 'test_client_secret',
 };
@@ -34,7 +34,7 @@ describe('Reddit Sample Fixture', () => {
 
     const result = await urlToJsonMarkdown(
       'https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/',
-      dummyCredentials
+      dummyOptions
     );
 
     expect(result.type).toBe('reddit');
@@ -59,7 +59,7 @@ describe('Reddit Sample Fixture', () => {
 
     const result = await urlToJsonMarkdown(
       'https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/comment/mye3h38/',
-      dummyCredentials
+      dummyOptions
     );
 
     expect(result.type).toBe('reddit');
@@ -129,5 +129,62 @@ describe('Reddit Sample Fixture', () => {
     ).rejects.toThrow(
       'Reddit returned HTML instead of JSON. This may be due to rate limiting or CORS restrictions. Consider providing Reddit credentials for more reliable access.'
     );
+  });
+
+  test('should include comments when requested', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => redditSampleData,
+    });
+
+    const result = await urlToJsonMarkdown(
+      'https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/',
+      { ...dummyOptions, includeComments: true }
+    );
+
+    expect(result.type).toBe('reddit');
+    expect(result.content).toContain('## Comments');
+    expect(result.content).toContain('##### You can use both, and focus on CC');
+    expect(result.content).toContain('├─ Thanks for the advice');
+    expect(result.content).toContain('└────');
+    expect(result.content).toContain('by *goForIt07*');
+  });
+
+  test('should not include comments when includeComments is false', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => redditSampleData,
+    });
+
+    const result = await urlToJsonMarkdown(
+      'https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/',
+      { ...dummyOptions, includeComments: false }
+    );
+
+    expect(result.type).toBe('reddit');
+    expect(result.content).not.toContain('## Comments');
+    expect(result.content).not.toContain('You can use both, and focus on CC');
+  });
+
+  test('should not include comments when option is not specified', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => redditSampleData,
+    });
+
+    const result = await urlToJsonMarkdown(
+      'https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/',
+      dummyOptions
+    );
+
+    expect(result.type).toBe('reddit');
+    expect(result.content).not.toContain('## Comments');
+    expect(result.content).not.toContain('You can use both, and focus on CC');
   });
 });
