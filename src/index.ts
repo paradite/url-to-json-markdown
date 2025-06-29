@@ -287,9 +287,9 @@ function extractCommentTitle(commentBody: string): string {
     return 'Untitled Comment';
   }
 
-  // Limit title length to 100 characters
-  if (firstLine.length > 100) {
-    return firstLine.substring(0, 97) + '...';
+  // Limit title length to 200 characters
+  if (firstLine.length > 200) {
+    return firstLine.substring(0, 197) + '...';
   }
 
   return firstLine;

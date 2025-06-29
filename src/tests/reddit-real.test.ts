@@ -78,7 +78,7 @@ describe('Reddit Real URL', () => {
 
     expect(result.type).toBe('reddit');
     expect(result.title).toBe(
-      "4 is better than 3.7 critically due to the fact that it doesn't typically go above and beyond wha..."
+      "4 is better than 3.7 critically due to the fact that it doesn't typically go above and beyond what the user asks. It does a better job of staying within the scope of the request."
     );
     expect(result.content).toContain('Comment by');
     expect(result.content).toContain('4 is better than 3.7 critically');
