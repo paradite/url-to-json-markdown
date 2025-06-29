@@ -15,26 +15,35 @@ npm install url-to-json-markdown
 ## Usage
 
 ```typescript
-import { urlToJsonMarkdown } from "url-to-json-markdown";
+import { urlToJsonMarkdown } from 'url-to-json-markdown';
 
-// Reddit post
+// Reddit post (using fallback without credentials)
 const post = await urlToJsonMarkdown(
-  "https://www.reddit.com/r/example/comments/12345/title/"
+  'https://www.reddit.com/r/example/comments/12345/title/'
 );
 console.log(post.title); // "Post Title"
 console.log(post.content); // "# Post Title\n\nPost content...\n\nby _username_ (↑ 123) 12/25/2024"
 console.log(post.type); // "reddit"
 
+// Reddit post with credentials (more reliable)
+const postWithCreds = await urlToJsonMarkdown(
+  'https://www.reddit.com/r/example/comments/12345/title/',
+  {
+    clientId: 'your_client_id',
+    clientSecret: 'your_client_secret',
+  }
+);
+
 // Reddit comment
 const comment = await urlToJsonMarkdown(
-  "https://www.reddit.com/r/example/comments/12345/comment/abc123/"
+  'https://www.reddit.com/r/example/comments/12345/comment/abc123/'
 );
 console.log(comment.title); // "First line of comment..."
 console.log(comment.content); // "# Comment by username\n\nComment text...\n\nby _username_ (↑ 45)"
 console.log(comment.type); // "reddit"
 
 // Generic web page
-const webpage = await urlToJsonMarkdown("https://example.com/article");
+const webpage = await urlToJsonMarkdown('https://example.com/article');
 console.log(webpage.title); // "Article Title"
 console.log(webpage.content); // "# Article Title\n\nMain content as markdown..."
 console.log(webpage.type); // "generic"
@@ -42,15 +51,45 @@ console.log(webpage.type); // "generic"
 
 ## API
 
-### `urlToJsonMarkdown(url: string): Promise<UrlToJsonResult>`
+### `urlToJsonMarkdown(url: string, redditCredentials?: RedditCredentials): Promise<UrlToJsonResult>`
+
+**Parameters:**
+
+- `url` - The URL to fetch and convert
+- `redditCredentials` - Optional Reddit API credentials for more reliable access
+
+**Reddit Credentials:**
+
+```typescript
+interface RedditCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+```
+
+**Return Type:**
 
 ```typescript
 interface UrlToJsonResult {
   title: string;
   content: string;
-  type: "reddit" | "generic";
+  type: 'reddit' | 'generic';
 }
 ```
+
+## Reddit Access
+
+For Reddit URLs, the library supports two modes:
+
+1. **Fallback mode (no credentials)**: Uses browser user agent to access Reddit's public JSON API. May be subject to rate limiting.
+
+2. **Authenticated mode (with credentials)**: Uses Reddit OAuth API for more reliable access. Requires Reddit app credentials.
+
+To get Reddit credentials:
+
+1. Go to https://www.reddit.com/prefs/apps
+2. Create a new app (script type)
+3. Use the client ID and secret
 
 ## Supported URLs
 
