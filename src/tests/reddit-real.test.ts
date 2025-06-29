@@ -31,7 +31,9 @@ describe('Reddit Real URL', () => {
       "I've tried a handful of evaluation tools, and here's what I've learned from using them:"
     );
     expect(result.content).toContain('handful of evaluation tools');
-    expect(result.content).toContain('Comment by UnitApprehensive5150');
+    expect(result.content).toContain(
+      'Comment by UnitApprehensive5150 on "What is your favorite eval tech stack for an LLM system"'
+    );
     expect(result.content).toContain('by *UnitApprehensive5150*');
     expect(result.content).toContain('OpenAI Eval (Auto-Judge)');
     expect(result.content).toContain('permalink');

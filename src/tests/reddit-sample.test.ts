@@ -66,7 +66,9 @@ describe('Reddit Sample Fixture', () => {
     expect(result.title).toBe(
       'Branch it and give it a roll man. I wouldnt worry about the context one bit with 1,900 lines. You...'
     );
-    expect(result.content).toContain('Comment by Motor_System_6171');
+    expect(result.content).toContain(
+      'Comment by Motor_System_6171 on "Mid-project on Cursor.. easy to context switch to Claude?"'
+    );
     expect(result.content).toContain('Branch it and give it a roll man');
     expect(result.content).toContain('by *Motor_System_6171*');
     expect(result.content).toContain('↑ 3/ ↓ 0');

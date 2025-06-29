@@ -106,7 +106,7 @@ async function parseRedditUrl(
         const commentTitle = extractCommentTitle(comment.body);
         return {
           title: commentTitle,
-          content: formatCommentToMarkdown(comment),
+          content: formatCommentToMarkdown(comment, post.title),
           type: 'reddit',
         };
       }
@@ -307,8 +307,9 @@ function findCommentById(commentsListing: any, commentId: string): any {
   return null;
 }
 
-function formatCommentToMarkdown(comment: any): string {
-  let markdown = `# Comment by ${comment.author}\n\n`;
+function formatCommentToMarkdown(comment: any, postTitle?: string): string {
+  const titleSuffix = postTitle ? ` on "${normalizeQuotes(postTitle)}"` : '';
+  let markdown = `# Comment by ${comment.author}${titleSuffix}\n\n`;
 
   if (comment.body) {
     markdown += `${normalizeQuotes(comment.body)}\n\n`;
