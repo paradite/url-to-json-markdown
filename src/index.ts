@@ -113,7 +113,7 @@ async function parseRedditUrl(
         const commentTitle = extractCommentTitle(comment.body);
         return {
           title: commentTitle,
-          content: formatCommentToMarkdown(comment, post.title),
+          content: formatCommentToMarkdown(comment, post.title, options),
           type: 'reddit',
         };
       }
@@ -317,7 +317,11 @@ function findCommentById(commentsListing: any, commentId: string): any {
   return null;
 }
 
-function formatCommentToMarkdown(comment: any, postTitle?: string): string {
+function formatCommentToMarkdown(
+  comment: any,
+  postTitle?: string,
+  options?: RedditOptions
+): string {
   const titleSuffix = postTitle ? ` on "${normalizeQuotes(postTitle)}"` : '';
   let markdown = `# Comment by ${comment.author}${titleSuffix}\n\n`;
 
@@ -340,6 +344,19 @@ function formatCommentToMarkdown(comment: any, postTitle?: string): string {
   );
 
   markdown += `by *${comment.author}* (↑ ${comment.ups}/ ↓ ${comment.downs}) ${createdDate}`;
+
+  // Add child comments if requested and available
+  if (
+    options?.includeComments &&
+    comment.replies &&
+    typeof comment.replies === 'object' &&
+    comment.replies.data?.children
+  ) {
+    markdown += '\n\n## Replies\n\n';
+    comment.replies.data.children.forEach((reply: any) => {
+      markdown += formatCommentTree(reply);
+    });
+  }
 
   return markdown;
 }

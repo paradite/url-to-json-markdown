@@ -187,4 +187,49 @@ describe('Reddit Sample Fixture', () => {
     expect(result.content).not.toContain('## Comments');
     expect(result.content).not.toContain('You can use both, and focus on CC');
   });
+
+  test('should include child comments for comment URLs when requested', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => redditSampleData,
+    });
+
+    const result = await urlToJsonMarkdown(
+      'https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/comment/mye3h38/',
+      { ...dummyOptions, includeComments: true }
+    );
+
+    expect(result.type).toBe('reddit');
+    expect(result.title).toBe(
+      'Branch it and give it a roll man. I wouldnt worry about the context one bit with 1,900 lines. You...'
+    );
+    expect(result.content).toContain('Comment by Motor_System_6171');
+    expect(result.content).toContain('Branch it and give it a roll man');
+    // Should include child comments/replies
+    expect(result.content).toContain('## Replies');
+    expect(result.content).toContain("├─ Think I'm going to finish");
+  });
+
+  test('should not include child comments for comment URLs when not requested', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => redditSampleData,
+    });
+
+    const result = await urlToJsonMarkdown(
+      'https://www.reddit.com/r/ClaudeAI/comments/1le69jw/test/comment/mye3h38/',
+      dummyOptions
+    );
+
+    expect(result.type).toBe('reddit');
+    expect(result.content).toContain('Comment by Motor_System_6171');
+    expect(result.content).toContain('Branch it and give it a roll man');
+    // Should NOT include child comments/replies
+    expect(result.content).not.toContain('## Replies');
+    expect(result.content).not.toContain("Think I'm going to finish");
+  });
 });

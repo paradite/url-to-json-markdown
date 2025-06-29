@@ -53,6 +53,13 @@ console.log(comment.title); // "First line of comment..."
 console.log(comment.content); // "# Comment by username\n\nComment text...\n\nby _username_ (↑ 45)"
 console.log(comment.type); // "reddit"
 
+// Reddit comment with child comments/replies
+const commentWithReplies = await urlToJsonMarkdown(
+  'https://www.reddit.com/r/example/comments/12345/comment/abc123/',
+  { includeComments: true }
+);
+// Will include "## Replies" section with tree-structured child comments
+
 // Generic web page
 const webpage = await urlToJsonMarkdown('https://example.com/article');
 console.log(webpage.title); // "Article Title"
@@ -80,7 +87,7 @@ interface RedditOptions {
 ```
 
 - `clientId` & `clientSecret` - Reddit API credentials for more reliable access
-- `includeComments` - Include comments in a tree structure (Reddit posts only)
+- `includeComments` - Include comments in a tree structure (Reddit posts) or child comments/replies (Reddit comments)
 
 **Return Type:**
 
