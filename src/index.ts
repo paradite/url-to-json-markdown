@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom';
 export interface UrlToJsonResult {
   title: string;
   content: string;
-  type: 'reddit' | 'generic';
+  type: 'reddit' | 'generic' | 'twitter';
 }
 
 export interface RedditOptions {
@@ -19,6 +19,8 @@ export async function urlToJsonMarkdown(
 ): Promise<UrlToJsonResult> {
   if (isRedditUrl(url)) {
     return await parseRedditUrl(url, options);
+  } else if (isTwitterUrl(url)) {
+    return await parseTwitterUrl(url);
   } else {
     return await parseGenericUrl(url);
   }
@@ -49,6 +51,60 @@ async function getRedditToken(credentials: {
 
   const data = (await response.json()) as any;
   return data.access_token;
+}
+
+async function parseTwitterUrl(url: string): Promise<UrlToJsonResult> {
+  try {
+    // Extract tweet ID from URL
+    const tweetIdMatch = url.match(/status\/(\d+)/);
+    if (!tweetIdMatch) {
+      throw new Error('Invalid Twitter URL: Could not extract tweet ID');
+    }
+    
+    // Try to get tweet data using Twitter's embedded tweet API
+    const embedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true`;
+    
+    const response = await fetch(embedUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Twitter embed data: ${response.status} ${response.statusText}`);
+    }
+
+    const embedData = await response.json();
+    
+    // Extract content from the embedded HTML
+    const dom = new JSDOM(embedData.html);
+    const document = dom.window.document;
+    
+    // Get the tweet text
+    const tweetTextElement = document.querySelector('p');
+    const tweetText = tweetTextElement?.textContent?.trim() || '';
+    
+    // Get author info
+    const authorElement = document.querySelector('a[href*="twitter.com/"]') || document.querySelector('a[href*="x.com/"]');
+    const authorName = embedData.author_name || 'Unknown';
+    const authorHandle = authorElement ? authorElement.getAttribute('href')?.split('/').pop() : 'unknown';
+    
+    // Format as markdown
+    const title = `Tweet by ${authorName}`;
+    const content = `# ${title}\n\n${tweetText}\n\n---\n\n**Author:** ${authorName} (@${authorHandle})\n**URL:** ${url}`;
+    
+    return {
+      title,
+      content,
+      type: 'twitter',
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Failed to parse Twitter URL: ${error}`);
+  }
 }
 
 async function parseRedditUrl(
@@ -255,6 +311,20 @@ function isRedditUrl(url: string): boolean {
     const urlObj = new URL(url);
     return (
       urlObj.hostname === 'www.reddit.com' || urlObj.hostname === 'reddit.com'
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isTwitterUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    return (
+      urlObj.hostname === 'x.com' || 
+      urlObj.hostname === 'twitter.com' || 
+      urlObj.hostname === 'www.x.com' || 
+      urlObj.hostname === 'www.twitter.com'
     );
   } catch {
     return false;
