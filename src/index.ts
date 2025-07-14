@@ -13,16 +13,20 @@ export interface RedditOptions {
   includeComments?: boolean;
 }
 
+export interface GenericUrlOptions {
+  enableArchiveFallback?: boolean;
+}
+
 export async function urlToJsonMarkdown(
   url: string,
-  options?: RedditOptions
+  options?: RedditOptions & GenericUrlOptions
 ): Promise<UrlToJsonResult> {
   if (isRedditUrl(url)) {
     return await parseRedditUrl(url, options);
   } else if (isTwitterUrl(url)) {
     return await parseTwitterUrl(url);
   } else {
-    return await parseGenericUrl(url);
+    return await parseGenericUrl(url, options);
   }
 }
 
@@ -194,18 +198,16 @@ async function parseRedditUrl(
   }
 }
 
-async function parseGenericUrl(url: string): Promise<UrlToJsonResult> {
+async function parseGenericUrl(url: string, options?: GenericUrlOptions): Promise<UrlToJsonResult> {
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Cache-Control': 'no-cache',
-        Pragma: 'no-cache',
+        'Pragma': 'no-cache',
       },
     });
 
@@ -216,6 +218,54 @@ async function parseGenericUrl(url: string): Promise<UrlToJsonResult> {
     }
 
     const html = await response.text();
+    return processHtmlContent(html, url);
+    
+  } catch (error) {
+    const lastError = error instanceof Error ? error : new Error(String(error));
+    
+    // If this is a 403 error and archive fallback is enabled, try archive.org
+    if (lastError.message.includes('403') && options?.enableArchiveFallback) {
+      try {
+        console.log('Attempting archive.org fallback...');
+        const archiveUrl = `https://web.archive.org/web/2/${url}`;
+        const response = await fetch(archiveUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
+        });
+        
+        if (response.ok) {
+          const html = await response.text();
+          const result = processHtmlContent(html, url);
+          result.title = `[Archived] ${result.title}`;
+          result.content = result.content + `\n\n---\n\n*Retrieved from [Internet Archive Wayback Machine](${archiveUrl})*`;
+          return result;
+        }
+      } catch (archiveError) {
+        // Archive fallback failed, fall through to original error
+      }
+    }
+
+    // Provide helpful error message for 403 errors
+    if (lastError.message.includes('403')) {
+      const errorMessage = `Failed to fetch URL: 403 Forbidden. The website "${new URL(url).hostname}" is blocking automated requests. ` +
+        `This is common for sites with anti-bot protection (like Cloudflare). ` +
+        `Try accessing the URL manually in a browser first, or the site may require authentication.`;
+      
+      if (!options?.enableArchiveFallback) {
+        throw new Error(errorMessage + ` You can also try enabling the archive fallback option.`);
+      } else {
+        throw new Error(errorMessage + ` Archive fallback was attempted but also failed.`);
+      }
+    }
+
+    throw lastError;
+  }
+}
+
+function processHtmlContent(html: string, _url: string): UrlToJsonResult {
+  try {
     const dom = new JSDOM(html);
     const document = dom.window.document;
 

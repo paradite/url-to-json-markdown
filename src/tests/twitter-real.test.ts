@@ -1,13 +1,17 @@
-import { urlToJsonMarkdown } from "../index.js";
+import { urlToJsonMarkdown } from '../index.js';
 
-describe("Twitter Real URL", () => {
-  test("should work with X/Twitter URL", async () => {
-    const result = await urlToJsonMarkdown("https://x.com/aidan_mclau/status/1941540160434495649");
-    
-    expect(result.type).toBe("twitter");
-    expect(result.title).toBe("Tweet by Aidan McLaughlin");
-    expect(result.content).toContain("what does claude code (with opus) offer that cursor agent doesn't?");
-    expect(result.content).toContain("Author: Aidan McLaughlin");
-    expect(result.content).toContain("URL: https://x.com/aidan_mclau/status/1941540160434495649");
+describe('Twitter Real URL', () => {
+  test('should work with X/Twitter URL', async () => {
+    const result = await urlToJsonMarkdown(
+      'https://x.com/paradite_/status/1925638145195876511'
+    );
+
+    expect(result.type).toBe('twitter');
+    expect(result.title).toBe('Tweet by Zhu Liang');
+    expect(result.content).toContain('Claude Opus 4');
+    expect(result.content).toContain('Author: Zhu Liang');
+    expect(result.content).toContain(
+      'URL: https://x.com/paradite_/status/1925638145195876511'
+    );
   }, 10000);
 });
